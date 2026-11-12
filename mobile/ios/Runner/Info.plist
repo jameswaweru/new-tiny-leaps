@@ -8,6 +8,9 @@
 			<key>NSAllowsLocalNetworking</key>
 			<true/>
 		</dict>
+		<!-- dev only: physical iPhones need this to reach the backend on the Wi-Fi LAN (192.168.1.37) -->
+		<key>NSLocalNetworkUsageDescription</key>
+		<string>Tiny Leaps connects to the development server on your local network.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>CFBundleDevelopmentRegion</key>
