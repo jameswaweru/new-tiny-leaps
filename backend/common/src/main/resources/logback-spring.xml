@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Tiny Leaps unified log format, shared by every micro service:
+  time stamp= | Severity= | UserUUID= | Micro Service Name= | ProcessName= | LogMessage= | Request= | Response= | TAT= |
+-->
+<configuration>
+    <springProperty scope="context" name="SERVICE_NAME" source="spring.application.name" defaultValue="tinyleaps-service"/>
+    <springProperty scope="context" name="LOG_DIR" source="tinyleaps.logging.dir" defaultValue="logs"/>
+
+    <property name="TL_PATTERN"
+              value="time stamp=%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} | Severity=%level | UserUUID=%X{userUuid:-N/A} | Micro Service Name=${SERVICE_NAME} | ProcessName=%X{processName:-SYSTEM} | LogMessage=%replace(%msg){'[\r\n]+',' '} | Request=%X{request:-N/A} | Response=%X{response:-N/A} | TAT=%X{tat:-N/A} |%n"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder><pattern>${TL_PATTERN}</pattern></encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${SERVICE_NAME}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/${SERVICE_NAME}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>20MB</maxFileSize>
+            <maxHistory>14</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder><pattern>${TL_PATTERN}</pattern></encoder>
+    </appender>
+
+    <logger name="org.hibernate.SQL" level="WARN"/>
+    <logger name="org.flywaydb" level="INFO"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+</configuration>

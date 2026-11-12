@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Paint &amp; Play · Tiny Leaps</title>
+<style>
+  :root { --ink:#3D3357; --bg:#F3F9FF; --card:#FFFFFF; --accent:#4FC3F7; --shadow:0 6px 0 rgba(61,51,87,.12); }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
+  html,body { margin:0; height:100%; overflow:hidden; background:var(--bg); color:var(--ink);
+    font-family:'Arial Rounded MT Bold','Trebuchet MS',Verdana,system-ui,sans-serif; }
+  .bar { position:fixed; top:0; left:0; right:0; height:64px; display:flex; align-items:center; gap:10px; padding:0 14px; z-index:50; }
+  .bar h1 { flex:1; margin:0; font-size:22px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .btn { width:48px; height:48px; border-radius:50%; border:0; background:var(--card); box-shadow:var(--shadow);
+    display:grid; place-items:center; cursor:pointer; padding:0; flex:none; }
+  .btn svg { width:26px; height:26px; }
+  .btn:active, .card:active, .sw:active { transform:translateY(3px); box-shadow:0 3px 0 rgba(61,51,87,.12); }
+  .btn[disabled] { opacity:.4; }
+  .screen { position:absolute; inset:64px 0 0 0; overflow-y:auto; padding:12px 16px 24px; display:none; }
+  .screen.on { display:block; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:16px; max-width:720px; margin:0 auto; }
+  .card { background:var(--card); border-radius:24px; box-shadow:var(--shadow); padding:10px; border:0; cursor:pointer;
+    text-align:center; color:var(--ink); font:inherit; }
+  .card .pic { width:100%; aspect-ratio:1; border-radius:16px; overflow:hidden; display:block; }
+  .card .pic svg { width:100%; height:100%; display:block; }
+  .card .name { margin-top:8px; font-size:17px; }
+  .themes .card .name { font-size:22px; margin:10px 0 4px; }
+  #paint { padding:0; overflow:hidden; display:none; flex-direction:column; }
+  #paint.on { display:flex; }
+  #canvasWrap { flex:1; display:flex; align-items:center; justify-content:center; padding:8px 16px; min-height:0; }
+  #canvasWrap svg { width:100%; height:100%; max-width:min(92vw,560px); max-height:100%; background:#fff; border-radius:22px;
+    box-shadow:var(--shadow); touch-action:manipulation; }
+  #canvasWrap .r { cursor:pointer; transition:fill .15s; }
+  .tools { display:flex; justify-content:center; gap:14px; padding:4px 16px 8px; }
+  .tools .btn.sel { background:#FFD54F; }
+  .palette { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; padding:8px 16px 18px; max-width:560px; width:100%; margin:0 auto; }
+  .sw { aspect-ratio:1; border-radius:50%; border:4px solid #fff; box-shadow:var(--shadow); cursor:pointer; padding:0; }
+  .sw.sel { outline:4px solid var(--ink); outline-offset:2px; transform:scale(1.06); }
+  @keyframes splash { 0% { transform:scale(.2); opacity:.9 } 100% { transform:scale(1.6); opacity:0 } }
+  .splash { position:fixed; width:60px; height:60px; margin:-30px 0 0 -30px; border-radius:50%; pointer-events:none;
+    animation:splash .45s ease-out forwards; z-index:60; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <button class="btn" id="back" aria-label="Back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#3D3357" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <h1 id="title">Paint &amp; Play</h1>
+  <button class="btn" id="sound" aria-label="Sound"></button>
+</div>
+
+<section class="screen on" id="menu"><div class="grid themes" id="themes"></div></section>
+<section class="screen" id="picker"><div class="grid" id="pictures"></div></section>
+<section class="screen" id="paint">
+  <div id="canvasWrap"></div>
+  <div class="tools">
+    <button class="btn sel" id="toolFill" aria-label="Paint bucket">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#3D3357" stroke-width="2" stroke-linejoin="round"><path d="M5 11l7-7 7 7-7 7z" fill="#81D4FA"/><path d="M19 15c0 1.5 1 2.5 1 3.5a1 1 0 0 1-2 0c0-1 1-2 1-3.5z" fill="#4FC3F7"/></svg>
+    </button>
+    <button class="btn" id="toolErase" aria-label="Eraser">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#3D3357" stroke-width="2" stroke-linejoin="round"><path d="M14 4l6 6-9 9H6l-3-3z" fill="#F8BBD0"/><path d="M9 9l6 6"/></svg>
+    </button>
+    <button class="btn" id="undo" aria-label="Undo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#3D3357" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+    </button>
+    <button class="btn" id="clear" aria-label="Start over">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#3D3357" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3" fill="#fff"/><path d="M12 8v8M8 12h8" transform="rotate(45 12 12)"/></svg>
+    </button>
+  </div>
+  <div class="palette" id="palette"></div>
+</section>
+
+<script src="/games/tl-paint-01/assets/art.js?v=1"></script>
+<script>
+(function () {
+  'use strict';
+  var A = window.TLArt;
+  var THEMES = [
+    { key: 'houses', name: 'Houses', list: A.houses },
+    { key: 'animals', name: 'Animals', list: A.animals },
+    { key: 'cars', name: 'Cars', list: A.cars }
+  ];
+  var COLORS = ['#EF5350', '#FF8A65', '#FFB74D', '#FFEE58', '#AED581', '#66BB6A',
+                '#4FC3F7', '#1E88E5', '#BA68C8', '#F48FB1', '#8D6E63', '#FFFFFF'];
+  var $ = function (id) { return document.getElementById(id); };
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem('tl-paint:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem('tl-paint:' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  var state = { screen: 'menu', theme: null, pic: null, color: COLORS[3], tool: 'fill', fills: {}, history: [], soundOn: store.get('sound', true) };
+
+  /* ---------- sound ---------- */
+  var ctx = null;
+  function tone(freq, dur, delay, type) {
+    if (!state.soundOn) return;
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      var t = ctx.currentTime + (delay || 0), o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + dur + 0.05);
+    } catch (e) {}
+  }
+  function pickSound() { tone(520, 0.1, 0, 'triangle'); }
+  function splashSound() { var f = 400 + COLORS.indexOf(state.color) * 45; tone(f, 0.14); tone(f * 1.5, 0.16, 0.06); }
+  function drawSoundIcon() {
+    $('sound').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#3D3357" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="#FFD54F"/>' +
+      (state.soundOn ? '<path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>' : '<path d="M17 9l5 6M22 9l-5 6"/>') + '</svg>';
+  }
+  $('sound').onclick = function () { state.soundOn = !state.soundOn; store.set('sound', state.soundOn); drawSoundIcon(); pickSound(); };
+  drawSoundIcon();
+
+  /* ---------- navigation ---------- */
+  function show(screen, title) {
+    state.screen = screen;
+    ['menu', 'picker', 'paint'].forEach(function (s) { $(s).classList.toggle('on', s === screen); });
+    $('title').textContent = title;
+  }
+  function exitGame() {
+    if (window.TinyLeaps && window.TinyLeaps.postMessage) window.TinyLeaps.postMessage(JSON.stringify({ type: 'exit', game: 'tl-paint-01' }));
+    else history.back();
+  }
+  $('back').onclick = function () {
+    pickSound();
+    if (state.screen === 'paint') openTheme(state.theme);
+    else if (state.screen === 'picker') openMenu();
+    else exitGame();
+  };
+
+  function card(svg, name, onClick) {
+    var b = document.createElement('button'); b.className = 'card';
+    b.innerHTML = '<div class="pic">' + svg + '</div><div class="name"></div>';
+    b.querySelector('.name').textContent = name;
+    b.onclick = function () { pickSound(); onClick(); };
+    return b;
+  }
+  function openMenu() {
+    show('menu', 'Paint & Play');
+    var box = $('themes'); box.innerHTML = '';
+    THEMES.forEach(function (t) { box.appendChild(card(A.toSvg(t.list[0], 'color'), t.name, function () { openTheme(t); })); });
+  }
+  function openTheme(t) {
+    state.theme = t;
+    show('picker', t.name);
+    var grid = $('pictures'); grid.innerHTML = '';
+    t.list.forEach(function (pic) {
+      grid.appendChild(card(A.toSvg(pic, 'paint', store.get('fills:' + pic.id, {})), pic.name, function () { openPaint(pic); }));
+    });
+  }
+
+  /* ---------- painting ---------- */
+  function openPaint(pic) {
+    state.pic = pic; state.fills = store.get('fills:' + pic.id, {}); state.history = [];
+    show('paint', pic.name);
+    $('canvasWrap').innerHTML = A.toSvg(pic, 'paint', state.fills).replace('width="400" height="400"', '');
+    updateUndo();
+  }
+  $('canvasWrap').addEventListener('click', function (e) {
+    var el = e.target.closest ? e.target.closest('.r') : null;
+    if (!el) return;
+    var idx = el.getAttribute('data-r');
+    var next = state.tool === 'erase' ? '#FFFFFF' : state.color;
+    var prev = state.fills[idx] || '#FFFFFF';
+    if (prev === next) return;
+    state.history.push({ idx: idx, prev: prev });
+    if (state.history.length > 100) state.history.shift();
+    setFill(el, idx, next);
+    splash(e.clientX, e.clientY, next); splashSound();
+  });
+  function setFill(el, idx, color) {
+    el.setAttribute('fill', color);
+    if (color === '#FFFFFF') delete state.fills[idx]; else state.fills[idx] = color;
+    store.set('fills:' + state.pic.id, state.fills);
+    updateUndo();
+  }
+  function splash(x, y, color) {
+    var s = document.createElement('div'); s.className = 'splash';
+    s.style.left = x + 'px'; s.style.top = y + 'px'; s.style.background = color;
+    document.body.appendChild(s); setTimeout(function () { s.remove(); }, 500);
+  }
+  function updateUndo() { $('undo').disabled = state.history.length === 0; }
+  $('undo').onclick = function () {
+    var h = state.history.pop(); if (!h) return;
+    var el = $('canvasWrap').querySelector('[data-r="' + h.idx + '"]');
+    if (el) setFill(el, h.idx, h.prev);
+    pickSound();
+  };
+  $('clear').onclick = function () {
+    pickSound();
+    Array.prototype.forEach.call($('canvasWrap').querySelectorAll('.r'), function (el) {
+      var idx = el.getAttribute('data-r');
+      if (state.fills[idx]) state.history.push({ idx: idx, prev: state.fills[idx] });
+      el.setAttribute('fill', '#FFFFFF');
+    });
+    state.fills = {}; store.set('fills:' + state.pic.id, {}); updateUndo();
+  };
+  function setTool(t) {
+    state.tool = t; $('toolFill').classList.toggle('sel', t === 'fill'); $('toolErase').classList.toggle('sel', t === 'erase');
+  }
+  $('toolFill').onclick = function () { pickSound(); setTool('fill'); };
+  $('toolErase').onclick = function () { pickSound(); setTool('erase'); };
+
+  var pal = $('palette');
+  COLORS.forEach(function (c) {
+    var b = document.createElement('button'); b.className = 'sw' + (c === state.color ? ' sel' : '');
+    b.style.background = c; b.setAttribute('aria-label', 'Colour ' + c);
+    b.onclick = function () {
+      state.color = c; setTool('fill'); tone(380 + COLORS.indexOf(c) * 40, 0.1, 0, 'triangle');
+      Array.prototype.forEach.call(pal.children, function (x) { x.classList.toggle('sel', x === b); });
+    };
+    pal.appendChild(b);
+  });
+
+  openMenu();
+})();
+</script>
+</body>
+</html>

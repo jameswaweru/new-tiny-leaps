@@ -1,0 +1,41 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: ${AUTH_DB_URL:jdbc:postgresql://localhost:5432/tinyleaps_auth_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+tinyleaps:
+  logging:
+    dir: ${TL_LOG_DIR:../logs}
+  security:
+    # Shared with the gateway; requests without it are rejected (403).
+    gateway-key: ${TL_GATEWAY_KEY:dev-gateway-key-change-me}
+  jwt:
+    # Must match the gateway. Override with TL_JWT_SECRET outside dev.
+    secret: ${TL_JWT_SECRET:dev-only-tinyleaps-jwt-secret-change-me-0123456789}
+    access-ttl: ${TL_ACCESS_TTL:PT15M}
+    refresh-ttl: ${TL_REFRESH_TTL:P30D}
+  social:
+    google:
+      # OAuth client IDs whose ID tokens are accepted (the Web client ID used as serverClientId in the app).
+      client-ids: ${TL_GOOGLE_CLIENT_IDS:}
+    apple:
+      # iOS bundle identifier(s) used as the Apple identity token audience.
+      client-ids: ${TL_APPLE_CLIENT_IDS:com.tinyleaps.app}

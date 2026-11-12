@@ -1,0 +1,26 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+tinyleaps:
+  logging:
+    dir: ${TL_LOG_DIR:../logs}
+  jwt:
+    secret: ${TL_JWT_SECRET:dev-only-tinyleaps-jwt-secret-change-me-0123456789}
+  gateway:
+    gateway-key: ${TL_GATEWAY_KEY:dev-gateway-key-change-me}
+    auth-uri: ${TL_AUTH_URI:http://localhost:8083}
+    catalogue-uri: ${TL_CATALOGUE_URI:http://localhost:8084}
+    # Every game is a standalone service, registered by its unique catalogue game id.
+    games:
+      tl-puzzle-01: ${TL_PUZZLE_URI:http://localhost:8091}
+      tl-paint-01: ${TL_PAINT_URI:http://localhost:8092}

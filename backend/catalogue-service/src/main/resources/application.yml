@@ -1,0 +1,26 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: catalogue-service
+  datasource:
+    url: ${CATALOGUE_DB_URL:jdbc:postgresql://localhost:5432/tinyleaps_catalogue_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+tinyleaps:
+  logging:
+    dir: ${TL_LOG_DIR:../logs}
+  security:
+    gateway-key: ${TL_GATEWAY_KEY:dev-gateway-key-change-me}

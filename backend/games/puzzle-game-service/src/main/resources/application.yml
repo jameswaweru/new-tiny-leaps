@@ -1,0 +1,30 @@
+server:
+  port: 8091
+  compression:
+    enabled: true
+    mime-types: text/html,text/javascript,application/javascript,image/svg+xml
+
+spring:
+  application:
+    name: puzzle-game-service
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          # Static game assets are versioned (?v=) so the WebView can cache them aggressively.
+          max-age: 30d
+          cache-public: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+tinyleaps:
+  logging:
+    dir: ${TL_LOG_DIR:../../logs}
+  security:
+    gateway-key: ${TL_GATEWAY_KEY:dev-gateway-key-change-me}
+  game:
+    id: tl-puzzle-01
